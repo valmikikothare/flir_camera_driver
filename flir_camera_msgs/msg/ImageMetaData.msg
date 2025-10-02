@@ -17,3 +17,6 @@ uint32 max_exposure_time
 
 # gain in db
 float32 gain
+
+# line status
+int64 line_status

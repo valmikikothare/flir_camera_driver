@@ -22,6 +22,7 @@
 #include <image_transport/image_transport.hpp>
 #include <iomanip>
 #include <iostream>
+#include <rclcpp/utilities.hpp>
 #include <sensor_msgs/fill_image.hpp>
 #include <sensor_msgs/image_encodings.hpp>
 #include <spinnaker_camera_driver/camera_driver.hpp>
@@ -118,11 +119,7 @@ Camera::Camera(
   imageTransport_ = it;
   prefix_ = prefix.empty() ? std::string("") : (prefix + ".");
   topicPrefix_ = prefix.empty() ? std::string("") : (prefix + "/");
-  lastStatusTime_ = node_->now();
-  if (useStatus) {
-    statusTimer_ = rclcpp::create_timer(
-      node_, node_->get_clock(), rclcpp::Duration(5, 0), std::bind(&Camera::printStatus, this));
-  }
+  useStatus_ = useStatus;
 }
 
 Camera::~Camera()
@@ -254,6 +251,9 @@ void Camera::readParameters()
   parameterFile_ = safe_declare<std::string>(prefix_ + "parameter_file", "parameters.yaml");
   connectWhileSubscribed_ = safe_declare<bool>(prefix_ + "connect_while_subscribed", false);
   enableExternalControl_ = safe_declare<bool>(prefix_ + "enable_external_control", false);
+  factoryReset_ = safe_declare<bool>(prefix_ + "factory_reset", false);
+  deviceReset_ = safe_declare<bool>(prefix_ + "device_reset", false);
+  deviceResetTimeout_ = safe_declare<double>(prefix_ + "device_reset_timeout", 3.0);
   callbackHandle_ = node_->add_on_set_parameters_callback(
     std::bind(&Camera::parameterChanged, this, std::placeholders::_1));
 }
@@ -671,6 +671,7 @@ void Camera::doPublish(const ImageConstPtr & im)
     metaMsg_.max_exposure_time = im->maxExposureTime_;
     metaMsg_.gain = im->gain_;
     metaMsg_.camera_time = im->imageTime_;
+    metaMsg_.line_status = im->exposureEndLineStatus;
     metaPub_->publish(metaMsg_);
   }
 }
@@ -680,6 +681,37 @@ void Camera::printCameraInfo()
   if (cameraRunning_) {
     LOG_INFO("camera has pixel format: " << wrapper_->getPixelFormat());
   }
+}
+
+bool Camera::factoryResetCamera()
+{
+  if (!Camera::execute("DeviceControl/FactoryReset")) {
+    LOG_ERROR("failed to factory reset camera!");
+    return false;
+  }
+  LOG_INFO("camera factory reset successful!")
+  return true;
+}
+
+bool Camera::deviceResetCamera(double timeout)
+{
+  // Set timeout if > 0
+  if (timeout > 0.0) {
+    int timeout_ms = timeout / 1000;
+    if (!Camera::setInt("MaxDeviceResetTime", timeout_ms)) {
+      LOG_WARN("failed to set max device reset time, attempting reset anyway...");
+    }
+  } else {
+    LOG_WARN("device reset timeout is <= 0, not modifying timeout and attempting reset anyway...")
+  }
+
+  // Attempt device reset (TODO: idk if this waits)
+  if (!Camera::execute("DeviceControl/DeviceReset")) {
+    LOG_ERROR("failed to device reset camera!");
+    return false;
+  }
+  LOG_INFO("camera device reset successful!")
+  return true;
 }
 
 void Camera::startCamera()
@@ -752,8 +784,6 @@ bool Camera::start()
     LOG_ERROR("giving up, camera " << serial_ << " not found!");
     return (false);
   }
-  keepRunning_ = true;
-  thread_ = std::make_shared<std::thread>(&Camera::run, this);
 
   if (wrapper_->initCamera(serial_)) {
     if (dumpNodeMap_) {
@@ -761,10 +791,37 @@ bool Camera::start()
       std::string nm = wrapper_->getNodeMapAsString();
       std::cout << nm;
     }
+
+    // Factory- and/or full-device-reset camera if requested, then exit
+    if (factoryReset_) {
+      if (deviceReset_) {
+        LOG_WARN("both factory reset and device reset requested, only factory resetting...")
+      }
+      return factoryResetCamera();
+    }
+    if (deviceReset_) {
+      return deviceResetCamera(deviceResetTimeout_);
+    }
+    // if (factoryReset_ || deviceReset_) {
+    //   LOG_INFO("Successfully reset camera.");
+    //   return (true);
+    // }
+
+    // Create status timer if requested and if not resetting
+    lastStatusTime_ = node_->now();
+    if (useStatus_) {
+      statusTimer_ = rclcpp::create_timer(
+        node_, node_->get_clock(), rclcpp::Duration(5, 0), std::bind(&Camera::printStatus, this));
+    }
+
     // Must first create the camera parameters before acquisition is started.
     // Some parameters (like blackfly s chunk control) cannot be set once
     // the camera is running.
     createCameraParameters();
+
+    keepRunning_ = true;
+    thread_ = std::make_shared<std::thread>(&Camera::run, this);
+
     if (!connectWhileSubscribed_) {
       startCamera();
     } else {
@@ -774,6 +831,7 @@ bool Camera::start()
     }
   } else {
     LOG_ERROR("init camera failed for cam: " << serial_);
+    return (false);
   }
   return (true);
 }

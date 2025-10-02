@@ -18,15 +18,16 @@ namespace spinnaker_camera_driver
 {
 Image::Image(
   uint64_t t, int16_t brightness, uint32_t et, uint32_t maxEt, float gain, int64_t imgT,
-  size_t imageSize, int status, const void * data, size_t w, size_t h, size_t stride,
-  size_t bitsPerPixel, size_t numChan, uint64_t frameId, pixel_format::PixelFormat pixFmt,
-  size_t ninc)
+  int64_t lineStatus, size_t imageSize, int status, const void * data, size_t w, size_t h,
+  size_t stride, size_t bitsPerPixel, size_t numChan, uint64_t frameId,
+  pixel_format::PixelFormat pixFmt, size_t ninc)
 : time_(t),
   brightness_(brightness),
   exposureTime_(et),
   maxExposureTime_(maxEt),
   gain_(gain),
   imageTime_(imgT),
+  exposureEndLineStatus(lineStatus),
   imageSize_(imageSize),
   imageStatus_(status),
   data_(data),

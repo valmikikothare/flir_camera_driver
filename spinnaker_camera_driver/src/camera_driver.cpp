@@ -18,6 +18,7 @@
 #include <rclcpp_components/register_node_macro.hpp>
 #include <spinnaker_camera_driver/camera_driver.hpp>
 #include <spinnaker_camera_driver/logging.hpp>
+#include <stdexcept>
 
 namespace spinnaker_camera_driver
 {
@@ -28,6 +29,7 @@ CameraDriver::CameraDriver(const rclcpp::NodeOptions & options) : Node("camera_d
   camera_ = std::make_shared<Camera>(this, imageTransport_.get(), "");
   if (!camera_->start()) {
     LOG_ERROR("startup failed!");
+    throw std::runtime_error("Failed to start camera");
   }
 }
 

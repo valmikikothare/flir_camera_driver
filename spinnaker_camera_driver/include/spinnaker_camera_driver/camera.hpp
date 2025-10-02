@@ -67,6 +67,8 @@ private:
   void processImage(const ImageConstPtr & image);
   void readParameters();
   void printCameraInfo();
+  bool factoryResetCamera();
+  bool deviceResetCamera(double timeout);
   void startCamera();
   bool stopCamera();
   void createCameraParameters();
@@ -133,6 +135,7 @@ private:
   std::string cameraInfoURL_;
   std::string frameId_;
   std::string parameterFile_;
+  bool useStatus_;
   double frameRate_;
   double exposureTime_;  // in microseconds
   bool autoExposure_;    // if auto exposure is on/off
@@ -148,6 +151,10 @@ private:
   double ptpOffset_{0};                 // in seconds
   bool connectWhileSubscribed_{false};  // if true, connects to SDK when subscription happens
   bool enableExternalControl_{false};
+  bool factoryReset_{false};
+  bool deviceReset_{false};
+  double deviceResetTimeout_{3.0};
+
   uint32_t currentExposureTime_{0};
   double averageTimeDifference_{std::numeric_limits<double>::quiet_NaN()};
   int64_t baseTimeOffset_{0};
