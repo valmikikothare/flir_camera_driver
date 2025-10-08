@@ -88,6 +88,9 @@ parameters:
   - name: line0_selector # black wire: opto-isolated input
     type: enum
     node: DigitalIOControl/LineSelector
+  - name: line0_linemode # valid values: "Input", "Output"
+    type: enum
+    node: DigitalIOControl/LineMode
   - name: line1_selector # white wire: opto-isolated output
     type: enum
     node: DigitalIOControl/LineSelector

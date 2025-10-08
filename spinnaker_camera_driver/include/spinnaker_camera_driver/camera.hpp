@@ -16,6 +16,7 @@
 #ifndef SPINNAKER_CAMERA_DRIVER__CAMERA_HPP_
 #define SPINNAKER_CAMERA_DRIVER__CAMERA_HPP_
 
+#include <atomic>
 #include <camera_info_manager/camera_info_manager.hpp>
 #include <deque>
 #include <flir_camera_msgs/msg/camera_control.hpp>
@@ -177,9 +178,9 @@ private:
   std::map<std::string, NodeInfo> parameterMap_;
   std::vector<std::string> parameterList_;  // remember original ordering
   rclcpp::Subscription<flir_camera_msgs::msg::CameraControl>::SharedPtr controlSub_;
-  uint32_t publishedCount_{0};
-  uint32_t droppedCount_{0};
-  uint32_t queuedCount_{0};
+  std::atomic<uint32_t> publishedCount_{0};
+  std::atomic<uint32_t> droppedCount_{0};
+  std::atomic<uint32_t> queuedCount_{0};
   rclcpp::Time lastStatusTime_;
   int qosDepth_{4};
   std::shared_ptr<Synchronizer> synchronizer_;

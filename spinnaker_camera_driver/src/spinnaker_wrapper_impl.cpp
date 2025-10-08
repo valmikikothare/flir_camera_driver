@@ -352,7 +352,7 @@ void SpinnakerWrapperImpl::OnImageEvent(Spinnaker::ImagePtr imgPtr)
       expTime = chunk.GetExposureTime();
       gain = chunk.GetGain();
       stamp = chunk.GetTimestamp();
-      lineStatus = chunk.GetLineStatusAll();
+      lineStatus = chunk.GetExposureEndLineStatusAll();
     } catch (const Spinnaker::Exception & e) {
       // Without chunk data enabled there is no way to get e.g. the time stamps. Bad!
       // Spinnaker: Image does not contain chunk data. [-1001]

@@ -17,10 +17,8 @@
 
 #include <chrono>
 #include <cmath>
-#include <fstream>
 #include <functional>
 #include <image_transport/image_transport.hpp>
-#include <iomanip>
 #include <iostream>
 #include <rclcpp/utilities.hpp>
 #include <sensor_msgs/fill_image.hpp>
@@ -28,7 +26,6 @@
 #include <spinnaker_camera_driver/camera_driver.hpp>
 #include <spinnaker_camera_driver/exposure_controller.hpp>
 #include <spinnaker_camera_driver/logging.hpp>
-#include <type_traits>
 
 namespace spinnaker_camera_driver
 {
