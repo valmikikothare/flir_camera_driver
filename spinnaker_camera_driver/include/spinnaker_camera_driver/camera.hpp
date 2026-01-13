@@ -90,8 +90,8 @@ private:
   void printCameraInfo();
   bool startStreaming();
   bool stopStreaming();
-  bool factoryResetCamera();
-  bool deviceResetCamera(double timeout);
+  void factoryResetCamera(double timeout);
+  void deviceResetCamera(double timeout);
   void createCameraParameters();
   void setParameter(const NodeInfo & ni, const rclcpp::Parameter & p);
   bool setEnum(const std::string & nodeName, const std::string & v = "");

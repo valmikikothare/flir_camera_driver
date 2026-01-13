@@ -179,7 +179,7 @@ bool Camera::configure()
       if (deviceReset_) {
         LOG_WARN("both factory reset and device reset requested, only factory resetting...");
       }
-      factoryResetCamera();
+      factoryResetCamera(deviceResetTimeout_);
     }
     if (deviceReset_) {
       deviceResetCamera(deviceResetTimeout_);
@@ -903,14 +903,14 @@ void Camera::factoryResetCamera(double timeout)
   // Set timeout if > 0
   if (timeout > 0.0) {
     int timeout_ms = timeout / 1000;
-    if (!Camera::setInt("MaxDeviceResetTime", timeout_ms)) {
+    if (!setInt("MaxDeviceResetTime", timeout_ms)) {
       LOG_WARN("failed to set max device reset time, attempting reset anyway...");
     }
   } else {
     LOG_WARN("device reset timeout is <= 0, not modifying timeout and attempting reset anyway...");
   }
 
-  if (!Camera::execute("DeviceControl/FactoryReset")) {
+  if (!execute("DeviceControl/FactoryReset")) {
     throw std::runtime_error("failed to factory reset camera!");
   }
   LOG_INFO("camera factory reset successful!");
@@ -921,7 +921,7 @@ void Camera::deviceResetCamera(double timeout)
   // Set timeout if > 0
   if (timeout > 0.0) {
     int timeout_ms = timeout / 1000;
-    if (!Camera::setInt("MaxDeviceResetTime", timeout_ms)) {
+    if (!setInt("MaxDeviceResetTime", timeout_ms)) {
       LOG_WARN("failed to set max device reset time, attempting reset anyway...");
     }
   } else {
@@ -929,7 +929,7 @@ void Camera::deviceResetCamera(double timeout)
   }
 
   // Attempt device reset (TODO: idk if this waits)
-  if (!Camera::execute("DeviceControl/DeviceReset")) {
+  if (!execute("DeviceControl/DeviceReset")) {
     throw std::runtime_error("failed to device reset camera!");
   }
   LOG_INFO("camera device reset successful!");
