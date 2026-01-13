@@ -16,6 +16,7 @@
 #ifndef SPINNAKER_CAMERA_DRIVER__CAMERA_HPP_
 #define SPINNAKER_CAMERA_DRIVER__CAMERA_HPP_
 
+#include <atomic>
 #include <camera_info_manager/camera_info_manager.hpp>
 #include <deque>
 #include <diagnostic_updater/diagnostic_updater.hpp>
@@ -89,6 +90,8 @@ private:
   void printCameraInfo();
   bool startStreaming();
   bool stopStreaming();
+  bool factoryResetCamera();
+  bool deviceResetCamera(double timeout);
   void createCameraParameters();
   void setParameter(const NodeInfo & ni, const rclcpp::Parameter & p);
   bool setEnum(const std::string & nodeName, const std::string & v = "");
@@ -196,6 +199,10 @@ private:
   double ptpOffset_{0};                    // in seconds
   bool streamOnlyWhileSubscribed_{false};  // if true, streams from camera only while subscribed
   bool enableExternalControl_{false};
+  bool factoryReset_{false};
+  bool deviceReset_{false};
+  double deviceResetTimeout_{3.0};
+
   uint32_t currentExposureTime_{0};
   double averageTimeDifference_{std::numeric_limits<double>::quiet_NaN()};
   int64_t baseTimeOffset_{0};
@@ -217,9 +224,9 @@ private:
   std::map<std::string, NodeInfo> parameterMap_;
   std::vector<std::string> parameterList_;  // remember original ordering
   rclcpp::Subscription<flir_camera_msgs::msg::CameraControl>::SharedPtr controlSub_;
-  uint32_t publishedCount_{0};
-  uint32_t droppedCount_{0};
-  uint32_t queuedCount_{0};
+  std::atomic<uint32_t> publishedCount_{0};
+  std::atomic<uint32_t> droppedCount_{0};
+  std::atomic<uint32_t> queuedCount_{0};
   rclcpp::Time lastStatusTime_;
   int qosDepth_{4};
   std::shared_ptr<Synchronizer> synchronizer_;

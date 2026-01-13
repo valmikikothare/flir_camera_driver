@@ -335,12 +335,14 @@ void SpinnakerWrapperImpl::OnImageEvent(Spinnaker::ImagePtr imgPtr)
     float expTime = 0;
     float gain = 0;
     int64_t stamp = 0;
+    int64_t lineStatus = 0;
 
     try {
       const Spinnaker::ChunkData & chunk = imgPtr->GetChunkData();
       expTime = chunk.GetExposureTime();
       gain = chunk.GetGain();
       stamp = chunk.GetTimestamp();
+      lineStatus = chunk.GetExposureEndLineStatusAll();
     } catch (const Spinnaker::Exception & e) {
       // Without chunk data enabled there is no way to get e.g. the time stamps. Bad!
       // Spinnaker: Image does not contain chunk data. [-1001]
@@ -373,7 +375,7 @@ void SpinnakerWrapperImpl::OnImageEvent(Spinnaker::ImagePtr imgPtr)
             imgPtr->GetHeight(), imgPtr->GetStride(), brightnessSkipPixels_)
         : -1;
     ImagePtr img(new Image(
-      t, brightness, expTime, maxExpTime, gain, stamp, imgPtr->GetImageSize(),
+      t, brightness, expTime, maxExpTime, gain, stamp, lineStatus, imgPtr->GetImageSize(),
       imgPtr->GetImageStatus(), imgPtr->GetData(), imgPtr->GetWidth(), imgPtr->GetHeight(),
       imgPtr->GetStride(), imgPtr->GetBitsPerPixel(), imgPtr->GetNumChannels(),
       imgPtr->GetFrameID(), pixelFormat_, numIncompleteImages_));

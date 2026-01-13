@@ -173,6 +173,22 @@ bool Camera::configure()
     imageMsg_.header.frame_id = frameId_;
     metaMsg_.header.frame_id = frameId_;
     openDevice();
+
+    // Factory- and/or full-device-reset camera if requested, then exit
+    if (factoryReset_) {
+      if (deviceReset_) {
+        LOG_WARN("both factory reset and device reset requested, only factory resetting...");
+      }
+      factoryResetCamera();
+    }
+    if (deviceReset_) {
+      deviceResetCamera(deviceResetTimeout_);
+    }
+    // if (factoryReset_ || deviceReset_) {
+    //   LOG_INFO("Successfully reset camera.");
+    //   return (true);
+    // }
+
     // Must create the camera parameters before acquisition is started.
     // Some parameters (like blackfly s chunk control) cannot be set once
     // the camera is running.
@@ -435,6 +451,9 @@ void Camera::readParameters()
   parameterFile_ = safe_declare<std::string>(prefix_ + "parameter_file", "parameters.yaml");
   streamOnlyWhileSubscribed_ = safe_declare<bool>(prefix_ + "connect_while_subscribed", false);
   enableExternalControl_ = safe_declare<bool>(prefix_ + "enable_external_control", false);
+  factoryReset_ = safe_declare<bool>(prefix_ + "factory_reset", false);
+  deviceReset_ = safe_declare<bool>(prefix_ + "device_reset", false);
+  deviceResetTimeout_ = safe_declare<double>(prefix_ + "device_reset_timeout", 3.0);
   callbackHandle_ = node_parameters_interface_->add_on_set_parameters_callback(
     std::bind(&Camera::parameterChanged, this, std::placeholders::_1));
   cameraInfoURL_ = safe_declare<std::string>(prefix_ + "camerainfo_url", "");
@@ -856,6 +875,7 @@ void Camera::doPublish(const ImageConstPtr & im)
     metaMsg_.max_exposure_time = im->maxExposureTime_;
     metaMsg_.gain = im->gain_;
     metaMsg_.camera_time = im->imageTime_;
+    metaMsg_.line_status = im->exposureEndLineStatus;
     metaPub_->publish(metaMsg_);
   }
   numIncompletes_ += im->numIncomplete_;
@@ -876,6 +896,43 @@ void Camera::printCameraInfo()
   if (wrapper_ && cameraStreaming_) {
     LOG_INFO("camera has pixel format: " << wrapper_->getPixelFormat());
   }
+}
+
+void Camera::factoryResetCamera(double timeout)
+{
+  // Set timeout if > 0
+  if (timeout > 0.0) {
+    int timeout_ms = timeout / 1000;
+    if (!Camera::setInt("MaxDeviceResetTime", timeout_ms)) {
+      LOG_WARN("failed to set max device reset time, attempting reset anyway...");
+    }
+  } else {
+    LOG_WARN("device reset timeout is <= 0, not modifying timeout and attempting reset anyway...");
+  }
+
+  if (!Camera::execute("DeviceControl/FactoryReset")) {
+    throw std::runtime_error("failed to factory reset camera!");
+  }
+  LOG_INFO("camera factory reset successful!");
+}
+
+void Camera::deviceResetCamera(double timeout)
+{
+  // Set timeout if > 0
+  if (timeout > 0.0) {
+    int timeout_ms = timeout / 1000;
+    if (!Camera::setInt("MaxDeviceResetTime", timeout_ms)) {
+      LOG_WARN("failed to set max device reset time, attempting reset anyway...");
+    }
+  } else {
+    LOG_WARN("device reset timeout is <= 0, not modifying timeout and attempting reset anyway...");
+  }
+
+  // Attempt device reset (TODO: idk if this waits)
+  if (!Camera::execute("DeviceControl/DeviceReset")) {
+    throw std::runtime_error("failed to device reset camera!");
+  }
+  LOG_INFO("camera device reset successful!");
 }
 
 bool Camera::deactivate()
