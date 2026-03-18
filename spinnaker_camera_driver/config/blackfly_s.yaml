@@ -11,7 +11,7 @@ parameters:
   - name: default_user_set
     type: enum
     # allowed values: UserSet0 UserSet1
-    node: UserSetControl/DefaultUserSet
+    node: UserSetControl/UserSetDefault
   - name: user_set_selector
     type: enum
     # allowed values: UserSet0 UserSet1
@@ -28,12 +28,30 @@ parameters:
     # Some formats are e.g. "Mono8", "BayerRG8", "BGR8", "BayerRG16"
     # default is "BayerRG8"
     node: ImageFormatControl/PixelFormat
+  - name: binning_selector
+    type: enum # valid values: "All", "Sensor", "ISP"
+    node: ImageFormatControl/BinningSelector
+  - name: binning_mode_x
+    type: enum # valid values: "Sum", "Average"
+    node: ImageFormatControl/BinningHorizontalMode
   - name: binning_x
     type: int
     node: ImageFormatControl/BinningHorizontal
+  - name: binning_mode_y
+    type: enum # valid values: "Sum", "Average"
+    node: ImageFormatControl/BinningVerticalMode
   - name: binning_y
     type: int
     node: ImageFormatControl/BinningVertical
+  # - name: decimation_selector
+  #   type: enum # valid values: "All", "Sensor"
+  #   node: ImageFormatControl/DecimationSelector
+  - name: decimation_x
+    type: int
+    node: ImageFormatControl/DecimationHorizontal
+  - name: decimation_y
+    type: int
+    node: ImageFormatControl/DecimationVertical
   - name: image_width
     type: int
     node: ImageFormatControl/Width
@@ -203,3 +221,11 @@ parameters:
     type: enum
     # valid values: "NewestFirst", "OldestFirst", "NewestOnly", "OldestFirstOverwrite"
     node: BufferHandlingControl/StreamBufferHandlingMode
+  # Save user set
+  - name: user_set_save_selector
+    type: enum
+    # allowed values: UserSet0 UserSet1
+    node: UserSetControl/UserSetSelector
+  - name: user_set_save
+    type: command
+    node: UserSetControl/UserSetSave

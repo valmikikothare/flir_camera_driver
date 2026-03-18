@@ -156,6 +156,27 @@ Camera::~Camera()
 bool Camera::configure()
 {
   readParameters();
+
+  // Factory- and/or full-device-reset camera if requested
+  try {
+    if (factoryReset_) {
+      if (deviceReset_) {
+        LOG_WARN("both factory reset and device reset requested, only factory resetting...");
+      }
+      openDevice();
+      factoryResetCamera();
+      return (false);
+    } else if (deviceReset_) {
+      openDevice();
+      deviceResetCamera();
+      return (false);
+    }
+  } catch (const std::exception & e) {
+    LOG_ERROR("factory/device reset failed: " << e.what());
+    deconfigure();
+    return (false);
+  }
+
   imageMsg_.header.frame_id = frameId_;
   metaMsg_.header.frame_id = frameId_;
   try {
@@ -173,21 +194,6 @@ bool Camera::configure()
     imageMsg_.header.frame_id = frameId_;
     metaMsg_.header.frame_id = frameId_;
     openDevice();
-
-    // Factory- and/or full-device-reset camera if requested, then exit
-    if (factoryReset_) {
-      if (deviceReset_) {
-        LOG_WARN("both factory reset and device reset requested, only factory resetting...");
-      }
-      factoryResetCamera(deviceResetTimeout_);
-    }
-    if (deviceReset_) {
-      deviceResetCamera(deviceResetTimeout_);
-    }
-    // if (factoryReset_ || deviceReset_) {
-    //   LOG_INFO("Successfully reset camera.");
-    //   return (true);
-    // }
 
     // Must create the camera parameters before acquisition is started.
     // Some parameters (like blackfly s chunk control) cannot be set once
@@ -453,7 +459,6 @@ void Camera::readParameters()
   enableExternalControl_ = safe_declare<bool>(prefix_ + "enable_external_control", false);
   factoryReset_ = safe_declare<bool>(prefix_ + "factory_reset", false);
   deviceReset_ = safe_declare<bool>(prefix_ + "device_reset", false);
-  deviceResetTimeout_ = safe_declare<double>(prefix_ + "device_reset_timeout", 3.0);
   callbackHandle_ = node_parameters_interface_->add_on_set_parameters_callback(
     std::bind(&Camera::parameterChanged, this, std::placeholders::_1));
   cameraInfoURL_ = safe_declare<std::string>(prefix_ + "camerainfo_url", "");
@@ -898,36 +903,16 @@ void Camera::printCameraInfo()
   }
 }
 
-void Camera::factoryResetCamera(double timeout)
+void Camera::factoryResetCamera()
 {
-  // Set timeout if > 0
-  if (timeout > 0.0) {
-    int timeout_ms = timeout / 1000;
-    if (!setInt("MaxDeviceResetTime", timeout_ms)) {
-      LOG_WARN("failed to set max device reset time, attempting reset anyway...");
-    }
-  } else {
-    LOG_WARN("device reset timeout is <= 0, not modifying timeout and attempting reset anyway...");
-  }
-
   if (!execute("DeviceControl/FactoryReset")) {
     throw std::runtime_error("failed to factory reset camera!");
   }
   LOG_INFO("camera factory reset successful!");
 }
 
-void Camera::deviceResetCamera(double timeout)
+void Camera::deviceResetCamera()
 {
-  // Set timeout if > 0
-  if (timeout > 0.0) {
-    int timeout_ms = timeout / 1000;
-    if (!setInt("MaxDeviceResetTime", timeout_ms)) {
-      LOG_WARN("failed to set max device reset time, attempting reset anyway...");
-    }
-  } else {
-    LOG_WARN("device reset timeout is <= 0, not modifying timeout and attempting reset anyway...");
-  }
-
   // Attempt device reset (TODO: idk if this waits)
   if (!execute("DeviceControl/DeviceReset")) {
     throw std::runtime_error("failed to device reset camera!");

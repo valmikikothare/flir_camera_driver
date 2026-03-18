@@ -52,8 +52,9 @@ CameraDriver::CameraDriver(const rclcpp::NodeOptions & options) : NodeType("came
     });
   }
 #else
-  camera_->configure();
-  camera_->activate();
+  if (camera_->configure()) {
+    camera_->activate();
+  }
 #endif
 }
 

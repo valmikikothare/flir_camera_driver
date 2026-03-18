@@ -90,8 +90,8 @@ private:
   void printCameraInfo();
   bool startStreaming();
   bool stopStreaming();
-  void factoryResetCamera(double timeout);
-  void deviceResetCamera(double timeout);
+  void factoryResetCamera();
+  void deviceResetCamera();
   void createCameraParameters();
   void setParameter(const NodeInfo & ni, const rclcpp::Parameter & p);
   bool setEnum(const std::string & nodeName, const std::string & v = "");
@@ -201,7 +201,6 @@ private:
   bool enableExternalControl_{false};
   bool factoryReset_{false};
   bool deviceReset_{false};
-  double deviceResetTimeout_{3.0};
 
   uint32_t currentExposureTime_{0};
   double averageTimeDifference_{std::numeric_limits<double>::quiet_NaN()};
